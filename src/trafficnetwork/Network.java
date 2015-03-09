@@ -19,7 +19,6 @@ public class Network {
 	
 	// 
 	public static HashMap<String, Path> paths = new HashMap<String, Path>();
-	public ShortestPath shortestpath = null;
 	
 	public Network(String filename) {
 		try{
@@ -111,20 +110,17 @@ public class Network {
 			id = prevNodeIds.get(id - 1);
 		}
 		
-		ShortestPath path = new ShortestPath(nodeIds);
-		String pathId = path.getHashCode();
+		ShortestPath path = null;
+		String pathId = getPathHashCode(nodeIds);
 		if (paths.containsKey(pathId)) { // 
 			path = (ShortestPath) paths.get(pathId);
-			path.travelTime = nodeDist.get(desId - 1);
-			return path;
 		}
-		else { // 
+		else {
+			path = new ShortestPath(nodeIds);
 			paths.put(pathId, path);
-			path.travelTime = nodeDist.get(desId - 1);
-			return path;
 		}
-		
-
+		//path.travelTime = nodeDist.get(desId - 1);
+		return path;
 	}
 	
 	private void readFile(String filename) throws IOException { // read file
@@ -171,6 +167,14 @@ public class Network {
 	
 	static public String getLinkHashCode(int node1, int node2) {
 		return Integer.toString(node1) + "_" + Integer.toString(node2);
+	}
+	
+	static public String getPathHashCode(ArrayList<Integer> nodeIds) {
+		String result = new String();
+		for (int i = 0; i <nodeIds.size(); i++) {
+			result += nodeIds.get(i);
+		}
+		return result;
 	}
 	
 	static public Node getNode(int node) {

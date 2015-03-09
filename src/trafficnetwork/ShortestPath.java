@@ -20,15 +20,14 @@ public class ShortestPath extends Path {
 		this.calcSumDerivativeTT();
 	}
 	
-	public ShortestPath(Path path) {
-		super(path.nodeIds);
+	public ShortestPath(ArrayList<Integer> nodeIds) {
+		super(nodeIds);
 		this.createLinkLookupTable();
 		this.calcSumDerivativeTT();
 	}
 	
-	public ShortestPath(ArrayList<Integer> nodeIds) {
-		super(nodeIds);
-		this.createLinkLookupTable();
+	public void calcTravelTime() {
+		super.calcTravelTime();
 		this.calcSumDerivativeTT();
 	}
 	

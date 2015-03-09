@@ -6,7 +6,7 @@ import java.util.HashSet;
 public class Path {
 	protected int [] nodeIds;
 	private double flow = 0.0;
-	public double travelTime = 0.0;
+	private double travelTime = 0.0;
 	
 	// this function is just for testing purpose
 	public int countOfNodes() {
@@ -42,14 +42,15 @@ public class Path {
 	}
 	
 	public void assignFlow(double flow) { // assign an arbitrary flow value
+		this.clearFlow2Link();
 		this.flow = Math.max(0, flow);
 		this.assignFlow2Link();
 	}
 	
 	public double shiftFlow(double diffFlow) { // + for increase, - for decrease
+		this.clearFlow2Link();
 		double old_flow = flow;
 		flow = Math.max(flow + diffFlow, 0);
-		travelTime = 0.0; // clear the previous travel time
 		this.assignFlow2Link();
 		return flow - old_flow;
 	}
@@ -60,15 +61,24 @@ public class Path {
 		}
 	}
 	
-	public double getTravelTime() { // calculate and return the travel time
+	private void clearFlow2Link() {
+		for (int i = 1; i < nodeIds.length; i++) {
+			Network.getLink(nodeIds[i - 1], nodeIds[i]).clearPathFlow(flow);
+		}
+	}
+	
+	public void calcTravelTime() { // calculate and return the travel time
 		travelTime = 0.0;
 		for (int i = 1; i < nodeIds.length; i++) {
 			travelTime += Network.getLink(nodeIds[i - 1], nodeIds[i]).calcTravelTime();
 		}
+	}
+	
+	public double getTravelTime() {
 		return travelTime;
 	}
-
-	public double getSumDerivative2ShortestPaths(ShortestPath shortestpath) { // calc sum of derivative TT of not common links
+	
+	public double calcSumDerivative2ShortestPaths(ShortestPath shortestpath) { // calc sum of derivative TT of not common links
 		HashSet<String> lookupTable = shortestpath.getLinkLookupTable();
 		double result = shortestpath.getSumDerivativeTT(); 
 		Link curr_link = null;
@@ -85,11 +95,5 @@ public class Path {
 		return result;
 	}
 	
-	public String getHashCode() {
-		String result = new String();
-		for (int i = 0; i < this.nodeIds.length; i++) {
-			result += nodeIds[i];
-		}
-		return result;
-	}
+
 }

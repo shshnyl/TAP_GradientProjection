@@ -12,7 +12,7 @@ public class Link {
 	final private double n = 4;
 	final private double alpha = 0.15;
 	// flow assigned
-	public double flow;
+	private double flow;
 	
 	public Link(int node1, int node2, double capacity, double length, double ffs) {
 		// final data members
@@ -31,7 +31,6 @@ public class Link {
 	
 	public void clearLinkFlow() { 
 		this.flow = 0;
-		
 	}
 
 	public void assignPathFlow(double pathflow) { // assign link with certain flow from path
@@ -39,7 +38,7 @@ public class Link {
 	}
 	
 	public void clearPathFlow(double pathflow) { 
-		this.flow = Math.min(this.flow - pathflow, 0);
+		this.flow = Math.max(this.flow - pathflow, 0);
 	}
 	
 	public double calcTravelTime(double flow) { // given the flow and calculate tt
