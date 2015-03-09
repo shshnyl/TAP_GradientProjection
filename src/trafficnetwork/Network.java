@@ -18,7 +18,7 @@ public class Network {
 	static private HashMap<String, Link> links;
 	
 	// 
-	private Path[] paths = null;
+	public static HashMap<String, Path> paths = new HashMap<String, Path>();
 	public ShortestPath shortestpath = null;
 	
 	public Network(String filename) {
@@ -29,104 +29,104 @@ public class Network {
 		}
 	}
 	
-	public Path[] generatePaths(int oriId, int desId) { // generate all the paths from ori to des
-		// free those memory
-		paths = null; 
-		// DFS from the destination and travel backwards
-		HashSet<Integer> visitedNodeIds = new HashSet<Integer>(); // remember this is a "global" lookup table 
-		ArrayList<ArrayList<Integer> > arrayOfNodeIds = this.generatePathsHelper(oriId, desId, visitedNodeIds);
-		paths = new Path[arrayOfNodeIds.size()];
-		for (int i = 0; i < paths.length; i++) {
-			paths[i] = new Path(arrayOfNodeIds.get(i));
-		}
-		return paths;
-	}
-	
-	private ArrayList<ArrayList<Integer> > generatePathsHelper(int oriId, int desId, HashSet<Integer> visitedNodeIds) {
-		if (visitedNodeIds.contains(desId)) // a cycle is created
-			return null; 
-		if (desId == oriId) { // reach the end
-			ArrayList<Integer> tmp = new ArrayList<Integer>(); tmp.add(desId);
-			ArrayList<ArrayList<Integer> > result = new ArrayList<ArrayList<Integer> >(); result.add(tmp);
-			return result;
-		}
-		else { // try all prev neighbors
-			// marked as visited
-			visitedNodeIds.add(desId); 
-			
-			// add all path from origin to prev neighbors
-			Iterator<Integer> itr = nodes[desId - 1].getPrevNodesIterator();
-			ArrayList<ArrayList<Integer> > result = new ArrayList<ArrayList<Integer> >()
-					, sub_result = null;
-			while (itr.hasNext()) {
-				sub_result = this.generatePathsHelper(oriId, itr.next(), visitedNodeIds);
-				if (sub_result != null) 
-					result.addAll(sub_result);
-			}
-			
-			// append self to the result
-			Iterator<ArrayList<Integer> > result_itr = result.iterator();
-			while (result_itr.hasNext()) {
-				result_itr.next().add(desId);
-			}
-			
-			// mark as unvisited
-			visitedNodeIds.remove(desId); 
-			// return
-			return result;
-		}
-	}
-	
 	public void assignAllPathFlow(double flow[]) { // assign an arbitrary flow value
 		// exclude illegal input argument
-		if (flow.length != paths.length) throw new IllegalArgumentException();
+		if (flow.length != paths.size()) throw new IllegalArgumentException();
 		// legal input
-		for (int i = 0; i < paths.length; i++) {
-			paths[i].assignFlow(flow[i]);
+		int i = 0;
+		Iterator<Path> itr = paths.values().iterator();
+		while (itr.hasNext()) {
+			itr.next().assignFlow(flow[i]);
+			i++;
 		}
 	}
 	
 	public void shiftAllPathFlow(double diffflow[]) { // shift from the original value
 		// exclude illegal input argument
-		if (diffflow.length != paths.length) throw new IllegalArgumentException();
+		if (diffflow.length != paths.size()) throw new IllegalArgumentException();
 		// legal input
-		for (int i = 0; i < paths.length; i++) {
-			paths[i].shiftFlow(diffflow[i]);
+		int i = 0;
+		Iterator<Path> itr = paths.values().iterator();
+		while (itr.hasNext()) {
+			itr.next().shiftFlow(diffflow[i]);
+			i++;
 		}
 	}
 	
 	public void clearAllPathFlow() { // assign 0 flow value to all the path
-		for (int i = 0; i < paths.length; i++) {
-			paths[i].assignFlow(0);
+		Iterator<Path> itr = paths.values().iterator();
+		while (itr.hasNext()) {
+			itr.next().assignFlow(0);
 		}
 	}
 	
-	public Path generateShortestPath() { // find the shortest path in terms of travel time
-		// exclude cases with no paths
-		if (this.paths.length == 0) return null;
-		// clear link flows
-		Iterator<Link> itr = links.values().iterator();
-		while (itr.hasNext()){
-			itr.next().clearLinkFlow();
+	public ShortestPath generateShortestPath(int oriId, int desId) { // find the shortest path in terms of travel time
+		HashSet<Integer> visitedNodes = new HashSet<Integer>();
+		ArrayList<Double> nodeDist = new ArrayList<Double>();
+		ArrayList<Integer> prevNodeIds = new ArrayList<Integer>();
+		int frontierId = 0, neighborId = 0;
+		double frontierDist, neighborDist;
+		// init
+		for (int i = 0; i < Network.numNodes; i++) {
+			nodeDist.add(Double.MAX_VALUE);
+			prevNodeIds.add(0);
 		}
-		// assign travel flow
-		for (int i = 0; i < this.paths.length; i++) {
-			paths[i].assignFlow2Link();
-		}
-		// update travel time & find shortest path
-		int minIndex = 0; double minTT = paths[0].getTravelTime();
-		for (int i = 1; i < this.paths.length; i++) {
-			double TT = paths[i].getTravelTime();
-			if (minTT < TT) {
-				minTT = TT;
-				minIndex = i;
+		nodeDist.set(oriId - 1, 0.0);
+		
+		// dijkstra
+		while (visitedNodes.size() < Network.numNodes) {
+			// picking the shortest one from the node
+			frontierId = 0; frontierDist = Double.MAX_VALUE;
+			for (int i = 0; i < Network.numNodes; i++) {
+				if (!visitedNodes.contains(i + 1) && nodeDist.get(i) < frontierDist) {
+					frontierId = i + 1;
+					frontierDist = nodeDist.get(i);
+				}
+			}
+			visitedNodes.add(frontierId);
+			// if it is the destination
+			if (frontierId == desId) 
+				break;
+			// otherwise
+			// update neighbors
+			Iterator<Integer> itr = Network.getNode(frontierId).getNextNodesIterator();
+			while (itr.hasNext()) {
+				neighborId = itr.next();
+				neighborDist = frontierDist + Network.getLink(frontierId, neighborId).calcTravelTime();	
+				if (visitedNodes.contains(neighborId)) continue;
+				
+				double old_neighborDist = nodeDist.get(neighborId - 1);
+				if (neighborDist < old_neighborDist) {
+					nodeDist.set(neighborId - 1, neighborDist);
+					prevNodeIds.set(neighborId - 1, frontierId);
+				}
 			}
 		}
-		// create new shortest path
-		shortestpath = new ShortestPath(paths[minIndex]);
-		return paths[minIndex];
-	}
 
+		// generate and add the path
+		int id = desId;
+		ArrayList<Integer> nodeIds = new ArrayList<Integer>(); 
+		while (id != 0) {
+			nodeIds.add(0, id);
+			id = prevNodeIds.get(id - 1);
+		}
+		
+		ShortestPath path = new ShortestPath(nodeIds);
+		String pathId = path.getHashCode();
+		if (paths.containsKey(pathId)) { // 
+			path = (ShortestPath) paths.get(pathId);
+			path.travelTime = nodeDist.get(desId - 1);
+			return path;
+		}
+		else { // 
+			paths.put(pathId, path);
+			path.travelTime = nodeDist.get(desId - 1);
+			return path;
+		}
+		
+
+	}
+	
 	private void readFile(String filename) throws IOException { // read file
 		URL url = Network.class.getClassLoader().getResource(filename);
 		Scanner textScanner = new Scanner(new File(url.getPath()));
@@ -158,6 +158,15 @@ public class Network {
 		}
 		// close
 		textScanner.close();
+	}
+	
+	static public double getObjectiveFunc() {
+		double result = 0.0;
+		Iterator<Link> itr = links.values().iterator();
+		while (itr.hasNext()) {
+			result += itr.next().calcIntegrationTT();
+		}
+		return result;
 	}
 	
 	static public String getLinkHashCode(int node1, int node2) {

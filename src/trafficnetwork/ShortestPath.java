@@ -26,6 +26,12 @@ public class ShortestPath extends Path {
 		this.calcSumDerivativeTT();
 	}
 	
+	public ShortestPath(ArrayList<Integer> nodeIds) {
+		super(nodeIds);
+		this.createLinkLookupTable();
+		this.calcSumDerivativeTT();
+	}
+	
 	private void calcSumDerivativeTT() { // sum of the first derivative of link time 
 		Link curr_link = null;
 		sumDerivativeTT = 0.0;

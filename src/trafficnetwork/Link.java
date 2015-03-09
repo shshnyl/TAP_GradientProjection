@@ -31,6 +31,7 @@ public class Link {
 	
 	public void clearLinkFlow() { 
 		this.flow = 0;
+		
 	}
 
 	public void assignPathFlow(double pathflow) { // assign link with certain flow from path
@@ -50,11 +51,18 @@ public class Link {
 		return t0 * (1 + alpha * Math.pow(flow / capacity, n));
 	}
 	
-	public double calcDerivativeTT() { // first derivative 
-		if (flow == 0) 
-			return 0;
+	public double calcDerivativeTT() { // first derivative
+		double threshold = 0.01;
+		if (flow < threshold) 
+			return 0.01;
 		else
 			return (alpha * t0 * n / capacity) * Math.pow(flow / capacity, n - 1);
 	}
 	
+	public double calcIntegrationTT() { // intergration
+		if (flow == 0) 
+			return 0;
+		else
+			return t0 * flow * (1 + alpha / (n + 1) * Math.pow(flow / capacity, n));
+	}
 }

@@ -6,17 +6,23 @@ import java.util.HashSet;
 public class Path {
 	protected int [] nodeIds;
 	private double flow = 0.0;
-	private double travelTime = -1.0;
+	public double travelTime = 0.0;
 	
-	// this functino is just for testing purpose
+	// this function is just for testing purpose
 	public int countOfNodes() {
 		return nodeIds.length;
 	}
-	
+	// this function is just for testing purpose
 	public void printAllNodeIds() {
+		String output = new String();
 		for (int i = 0; i < nodeIds.length; i++) {
-			System.out.println(nodeIds[i]);
+			output += (nodeIds[i]) + " ";
 		}
+		System.out.println(output);
+	}
+	// this function is just for testing purpose
+	public double getFlow() {
+		return this.flow;	
 	}
 	
 	public Path(int [] nodeIds , double flow) {
@@ -35,17 +41,20 @@ public class Path {
 		}
 	}
 	
-	
 	public void assignFlow(double flow) { // assign an arbitrary flow value
-		this.flow = Math.min(0, flow);
+		this.flow = Math.max(0, flow);
+		this.assignFlow2Link();
 	}
 	
-	public void shiftFlow(double diffFlow) { // + for increase, - for decrease
-		flow = Math.min(flow + diffFlow, 0);
-		travelTime = -1.0; // clear the previous travel time
+	public double shiftFlow(double diffFlow) { // + for increase, - for decrease
+		double old_flow = flow;
+		flow = Math.max(flow + diffFlow, 0);
+		travelTime = 0.0; // clear the previous travel time
+		this.assignFlow2Link();
+		return flow - old_flow;
 	}
 	
-	public void assignFlow2Link() { // 
+	private void assignFlow2Link() { // 
 		for (int i = 1; i < nodeIds.length; i++) {
 			Network.getLink(nodeIds[i - 1], nodeIds[i]).assignPathFlow(flow);
 		}
@@ -69,10 +78,18 @@ public class Path {
 				result -= curr_link.calcDerivativeTT();
 			}
 			else { // not common part
-				result -= curr_link.calcDerivativeTT();;
+				result += curr_link.calcDerivativeTT();;
 			}
 		}
 		
+		return result;
+	}
+	
+	public String getHashCode() {
+		String result = new String();
+		for (int i = 0; i < this.nodeIds.length; i++) {
+			result += nodeIds[i];
+		}
 		return result;
 	}
 }
